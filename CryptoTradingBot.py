@@ -1,8 +1,14 @@
 from CryptoDataLoader import CryptoDataLoader
 from CryptoTradingModel import CryptoTradingModel
+from sklearn.model_selection import KFold
 from dotenv import load_dotenv
 import h5py
 import os
+import logging
+import numpy as np
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
 
 
 class CryptoTradingBot:
@@ -18,34 +24,37 @@ class CryptoTradingBot:
 
     def run(self):
         if os.path.exists(self.model_path) and self.mode != 1:
-            print("Loading existing model...")
+            logger.info("Loading existing model...")
             self.model.load_model(self.model_path)
         else:
-            print("Training new model...")
+            logger.info("Training new model...")
             data = self.loader.get_historical_data(self.symbol, self.interval, self.start, self.end)
             preprocessed_data = self.loader.preprocess_data(data)
 
-            # Assume we have a way to generate labels for the data
             preprocessed_data, labels = self.generate_labels(preprocessed_data)
 
-            # Split the data
-            X_train, X_test, y_train, y_test = self.model.train_test_split(preprocessed_data, labels)
+            kf = KFold(n_splits=5)
+            scores = []
 
-            # Build and train the model
-            self.model.build_model(input_shape=(X_train.shape[1],))
-            self.model.train_model(X_train, y_train)
+            for train_index, test_index in kf.split(preprocessed_data):
+                X_train, X_test = preprocessed_data.iloc[train_index], preprocessed_data.iloc[test_index]
+                y_train, y_test = labels.iloc[train_index], labels.iloc[test_index]
+
+                self.model.build_model(input_shape=(X_train.shape[1],))
+                self.model.train_model(X_train, y_train)
+
+                score = self.model.evaluate_model(X_test, y_test)
+                scores.append(score)
+                logger.info(f"Fold score: {score}")
+
+            avg_score = np.mean(scores, axis=0)
+            logger.info(f"Average model score: {avg_score}")
+
             self.model.save_model(self.model_path)
 
-            # Evaluate the model
-            evaluation_results = self.model.evaluate_model(X_test, y_test)
-            print(evaluation_results)
-
     def generate_labels(self, data):
-        # Example label generation based on price increase/decrease
         labels = (data['Close'].diff() > 0).astype(int)
-        # Align labels with the data by shifting and dropping the last NaN value
         labels = labels.shift(-1).dropna()
-        # Also, drop the last row from data to match the labels' length
         data = data.iloc[:-1]
         return data, labels
 

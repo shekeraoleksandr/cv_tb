@@ -1,5 +1,7 @@
 import pandas as pd
 from binance.client import Client
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 
 
 class CryptoDataLoader:
@@ -31,9 +33,18 @@ class CryptoDataLoader:
         return df[['Open', 'High', 'Low', 'Close', 'Volume']]
 
     def preprocess_data(self, df):
-        daily_pct_change = df.pct_change().dropna()
-        df = daily_pct_change
-        indexes = df[(df.Volume == float("inf"))].index
-        for i in indexes:
-            df.at[i, 'Volume'] = max(df.Volume.drop(indexes))
-        return df
+        # Calculate daily percentage change
+        df = df.pct_change().dropna()
+
+        # Handle infinite values
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df.dropna(inplace=True)
+
+        # Additional feature engineering could go here
+
+        # Normalize or standardize features
+        scaler = StandardScaler()
+        scaled_features = scaler.fit_transform(df)
+        df_scaled = pd.DataFrame(scaled_features, index=df.index, columns=df.columns)
+
+        return df_scaled
