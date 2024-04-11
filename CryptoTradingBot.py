@@ -28,7 +28,8 @@ class CryptoTradingBot:
             self.model.load_model(self.model_path)
         else:
             logger.info("Training new model...")
-            data = self.loader.get_historical_data(self.symbol, self.interval, self.start, self.end)
+            # data = self.loader.get_historical_data(self.symbol, self.interval, self.start, self.end)
+            data = self.loader.get_binance_historical_data(self.symbol, self.interval, self.start, self.end)
             preprocessed_data = self.loader.preprocess_data(data)
 
             preprocessed_data, labels = self.generate_labels(preprocessed_data)
