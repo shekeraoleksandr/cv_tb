@@ -1,0 +1,18 @@
+{
+    "binance": {
+        "api_key": "UqLVaP1XPGMjNDpT6LKT7Cr825y9aJ75Q8cf130b4cBrbEHjIPehk0ceOWhJqlqV",
+        "api_secret": "l99swAtTrbSqYLqIv0wmcL5eRNcHjL9emiv4duPYUQpWahZuVhQE62xz1GhHrFOE"
+    },
+    "backtesting": {
+        "symbol": "BTCUSDT",
+        "interval": "1h",
+        "start_date": "1 Jan, 2020",
+        "end_date": "1 Jan, 2021",
+        "initial_capital": 10000.0,
+        "transaction_cost": 0.15,
+        "model_path": "models/my_trading_model.h5",
+        "csv_path": "data/historical_data_btcusdt.csv",
+        "input_shape": [5]
+    },
+    "mode" : 2
+}

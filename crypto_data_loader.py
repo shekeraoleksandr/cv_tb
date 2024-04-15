@@ -1,6 +1,7 @@
 import pandas as pd
 from binance.client import Client
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 import requests
 import numpy as np
 
@@ -71,7 +72,23 @@ class CryptoDataLoader:
 
         return df
 
-    def preprocess_data(self, df):
+    def save_historical_data_to_csv(self, symbol, interval, start, end, file_path):
+        """
+        Fetch historical data and save it to a CSV file.
+
+        :param symbol: Trading pair symbol, e.g., 'BTCUSDT'
+        :param interval: Interval for candlestick data, e.g., '1h'
+        :param start: Start date string
+        :param end: End date string
+        :param file_path: File path where the CSV should be saved
+        """
+        df = self.get_historical_data(symbol, interval, start, end)
+        df = self.preprocess_data(df)
+        df.to_csv(file_path)
+        print(f"Data saved to {file_path}")
+
+    @staticmethod
+    def preprocess_data(df):
         # Calculate daily percentage change
         df = df.pct_change().dropna()
 
@@ -79,10 +96,8 @@ class CryptoDataLoader:
         df.replace([np.inf, -np.inf], np.nan, inplace=True)
         df.dropna(inplace=True)
 
-        # Additional feature engineering could go here
-
-        # Normalize or standardize features
-        scaler = StandardScaler()
+        # Normalize features using Min-Max scaling
+        scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_features = scaler.fit_transform(df)
         df_scaled = pd.DataFrame(scaled_features, index=df.index, columns=df.columns)
 
