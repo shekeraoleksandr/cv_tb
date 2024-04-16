@@ -7,8 +7,24 @@ import numpy as np
 
 
 class CryptoDataLoader:
-    def __init__(self, api_key, api_secret):
-        self.client = Client(api_key, api_secret, requests_params={'timeout': 20})
+
+    def __init__(self, api_key, secret_key):
+        self.client = None
+        self.api_key = api_key
+        self.secret_key = secret_key
+
+    def initialize_client(self):
+        try:
+            self.client = Client(self.api_key, self.secret_key, requests_params={'timeout': 20})
+            self.client.ping()
+            print("Successfully connected to Binance API.")
+            return True
+        except requests.exceptions.ConnectionError:
+            print("Connection error. Unable to connect to Binance API.")
+            return False
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
 
     def get_historical_data(self, symbol, interval, start, end):
         """
@@ -34,7 +50,8 @@ class CryptoDataLoader:
             df[col] = df[col].astype(float)
         return df[['Open', 'High', 'Low', 'Close', 'Volume']]
 
-    def get_binance_historical_data(self, symbol, interval, start, end):
+    @staticmethod
+    def get_binance_historical_data(symbol, interval, start, end):
         """
         Fetch historical candlestick data from Binance for a given symbol and interval.
 
@@ -86,6 +103,19 @@ class CryptoDataLoader:
         df = self.preprocess_data(df)
         df.to_csv(file_path)
         print(f"Data saved to {file_path}")
+
+    @staticmethod
+    def load_data_from_csv(filepath):
+        try:
+            df = pd.read_csv(filepath)
+            # Ensure the 'Open time' column is treated as datetime type
+            if 'Open time' in df.columns:
+                df['Open time'] = pd.to_datetime(df['Open time'])
+                df.set_index('Open time', inplace=True)
+            return df
+        except Exception as e:
+            print(f"Error loading data from {filepath}: {e}")
+            return None
 
     @staticmethod
     def preprocess_data(df):

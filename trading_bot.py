@@ -21,7 +21,7 @@ class CryptoTradingBot:
         self.model = CryptoTradingModel(config['backtesting']['input_shape'])
         self.csv_path = config['backtesting']['csv_path']
         self.model_path = config['backtesting']['model_path']
-        self.mode = config['mode']  # Mode is set in the config for what action to perform
+        self.mode = config['mode']
 
     def run(self):
         if os.path.exists(self.model_path) and self.mode == 0:
@@ -29,11 +29,15 @@ class CryptoTradingBot:
             self.model.load_model(self.model_path)
         elif self.mode == 1:
             print("Training new model...")
-            data = self.loader.get_historical_data(self.config['backtesting']['symbol'],
-                                                   self.config['backtesting']['interval'],
-                                                   self.config['backtesting']['start_date'],
-                                                   self.config['backtesting']['end_date'])
-            preprocessed_data = self.loader.preprocess_data(data)
+            if self.loader.initialize_client():
+                data = self.loader.get_historical_data(self.config['backtesting']['symbol'],
+                                                       self.config['backtesting']['interval'],
+                                                       self.config['backtesting']['start_date'],
+                                                       self.config['backtesting']['end_date'])
+                preprocessed_data = self.loader.preprocess_data(data)
+            else:
+                preprocessed_data = self.loader.load_data_from_csv(self.config['backtesting']['csv_path'])
+
             preprocessed_data, labels = self.generate_labels(preprocessed_data)
 
             kf = KFold(n_splits=5)
@@ -59,14 +63,18 @@ class CryptoTradingBot:
         elif self.mode == 2:
             print("Running backtesting...")
             if not os.path.exists(self.csv_path):
-                print("Downloading historical data...")
-                self.loader.save_historical_data_to_csv(
-                    self.config['backtesting']['symbol'],
-                    self.config['backtesting']['interval'],
-                    self.config['backtesting']['start_date'],
-                    self.config['backtesting']['end_date'],
-                    self.csv_path
-                )
+                if self.loader.initialize_client():
+                    print("Downloading historical data...")
+                    self.loader.save_historical_data_to_csv(
+                        self.config['backtesting']['symbol'],
+                        self.config['backtesting']['interval'],
+                        self.config['backtesting']['start_date'],
+                        self.config['backtesting']['end_date'],
+                        self.csv_path
+                    )
+                else:
+                    print("Unable to download historical data...")
+                    return
 
             data = pd.read_csv(self.csv_path)
             backtester = Backtester(

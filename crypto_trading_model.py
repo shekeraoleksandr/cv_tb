@@ -24,7 +24,7 @@ class CryptoTradingModel:
     def train_test_split(data, labels, test_size=0.3):
         return train_test_split(data, labels, test_size=test_size, random_state=42)
 
-    def train_model(self, X_train, y_train, epochs=10, batch_size=32):
+    def train_model(self, X_train, y_train, epochs=300, batch_size=32):
         return self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
 
     @tf.function  # Decorate the predict method to optimize it
